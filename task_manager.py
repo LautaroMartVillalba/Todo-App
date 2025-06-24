@@ -8,6 +8,11 @@ closed_brace = '}'
 def create_task(title, description, init_date, termination_date, images_directories, files_directories):
     new_task = task.Task(title, description, init_date, termination_date, images_directories, files_directories)
 
+    add_task_to_json(new_task)
+
+    return new_task
+
+def add_task_to_json(task):
     if not os.path.isfile(default_directory):
         create_json_at_frist_time = open(default_directory, 'w')
         create_json_at_frist_time.write(
@@ -15,32 +20,30 @@ def create_task(title, description, init_date, termination_date, images_director
 }""")
         create_json_at_frist_time.close()
 
-    task_info =\
+    task_in_json_format =\
 f""""task1": {open_brace}
-  "title":"{new_task.title}",
-  "description":"{new_task.description}",
-  "init_date":"{new_task.init_date}",
-  "termination_date":"{new_task.termination_date}",
-  "images_directories":"{new_task.images_directories}",
-  "files_directories":"{new_task.files_directories}"
+  "title":"{task.title}",
+  "description":"{task.description}",
+  "init_date":"{task.init_date}",
+  "termination_date":"{task.termination_date}",
+  "images_directories":"{task.images_directories}",
+  "files_directories":"{task.files_directories}"
 {closed_brace}
 """
 
-    created_json = open(default_directory, 'r')
-    created_json_list = created_json.readlines()
-    file = open(default_directory, 'w')
+    created_file_read = open(default_directory, 'r')
+    line_list_in_created_file = created_file_read.readlines()
+    created_file_write = open(default_directory, 'w')
 
-    if created_json_list.__len__() > 9:
-            created_json_list.insert(-1, ',')
+    if line_list_in_created_file.__len__() > 9:
+        penultimate_line_in_fine = line_list_in_created_file[line_list_in_created_file.__len__()-1]
+        line_list_in_created_file.remove(penultimate_line_in_fine)
+        line_list_in_created_file.insert(-1, penultimate_line_in_fine+',\n')
 
-    created_json_list.insert(-1, task_info)
-    print(created_json_list)
-    for line in created_json_list:
-        file.write(line)
+    line_list_in_created_file.insert(-1, task_in_json_format)
+    for line in line_list_in_created_file:
+        created_file_write.write(line)
 
-    file.close()
-    created_json.close()
-
-    return new_task
-
+    created_file_write.close()
+    created_file_read.close()
 
