@@ -1,15 +1,15 @@
-import uuid
-
 import task
 import os
 import json
 import db_manager
 
-
-
 default_directory = './app_files/tasks.json'
 
+
 def create_task(title, description, init_date, termination_date, images_directories, files_directories):
+    """Create a new Task object and call add_tas_to_json(x) and save_task_in_db(x) methods.
+
+    Return Task object."""
     new_task = task.Task(title, description, init_date, termination_date, images_directories, files_directories)
 
     add_task_to_json(new_task)
@@ -17,53 +17,60 @@ def create_task(title, description, init_date, termination_date, images_director
 
     return new_task
 
-def add_task_to_json(task):
+def add_task_to_json(task_data):
+    """Adds to an existing (or create it if not exists) JSON dedicated file the inputted task data."""
+
     # If the file does not exist, it creates.
     if not os.path.isfile(default_directory):
-        create_json_at_frist_time = open(default_directory, 'w', encoding='utf-8')
-        json.dump({}, create_json_at_frist_time, indent=2)
-        create_json_at_frist_time.close()
+        create_json_at_first_time = open(default_directory, 'w', encoding='utf-8')
+        json.dump({}, create_json_at_first_time, indent=2)
 
+    # Reads the JSON file.
     with open(default_directory, 'r', encoding='utf-8') as json_read:
         try:
             tasks_data = json.load(json_read)
         except json.JSONDecodeError:
             tasks_data = {}
-            json_read.close()
-        json_read.close()
 
+    # Assigns a new position in the JSON file.
     task_name = len(tasks_data) +1
 
+    # Set the Task data.
     tasks_data[task_name] = {
-            "title": task.title,
-            "description": task.description,
-            "init_date": task.init_date,
-            "termination_date": task.termination_date,
-            "images_directories": task.images_directories,
-            "files_directories": task.files_directories
+            "title": task_data.title,
+            "description": task_data.description,
+            "init_date": task_data.init_date,
+            "termination_date": task_data.termination_date,
+            "images_directories": task_data.images_directories,
+            "files_directories": task_data.files_directories
     }
 
     with open(default_directory, 'w', encoding='utf-8') as f:
         json.dump(tasks_data, f, indent=2)
-        f.close()
 
-def save_task_in_db(task):
+def save_task_in_db(task_data):
+    """Saves the task data in the local DataBase."""
+
+    # SQL command.
     db_manager.cursor.execute(
         f"""INSERT INTO {db_manager.task_table_name}
         (title, description, init_date, termination_date, images_directories, files_directories
         ) VALUES (?,?,?,?,?,?)""", (
-            task.title,
-            task.description,
-            task.init_date,
-            task.termination_date,
-            task.images_directories,
-            task.files_directories
+            task_data.title,
+            task_data.description,
+            task_data.init_date,
+            task_data.termination_date,
+            task_data.images_directories,
+            task_data.files_directories
         ))
-
+    # Save changes.
     db_manager.connection.commit()
 
-# retrieve
 def get_all_tasks():
+    """Search all tasks saved in the DataBase.
+
+    Return list of JSON with tasks data."""
+
     result = db_manager.cursor.execute(
     f"""SELECT * FROM {db_manager.task_table_name}""").fetchall()
 
@@ -83,9 +90,13 @@ def get_all_tasks():
         task_dicc_list.append(tasks_data)
     return json.dumps(task_dicc_list, ensure_ascii=False, indent=2).encode('utf8').decode()
 
-def get_task_by_id(id):
+def get_task_by_id(task_id):
+    """Find and retrieve a task in the DataBase by her ID.
+
+    Return JSON with task data."""
+
     result = db_manager.cursor.execute(
-    f"""SELECT * FROM {db_manager.task_table_name} WHERE id = {id}""").fetchone()
+    f"""SELECT * FROM {db_manager.task_table_name} WHERE id = {task_id}""").fetchone()
 
     if result is None:
         return None
@@ -103,6 +114,8 @@ def get_task_by_id(id):
         return json.dumps(result_to_json, ensure_ascii=False, indent=2).encode('utf8').decode()
 
 def update_task_info_by_id(task_id, title=None, description=None, init_date=None, termination_date=None, images_directories=None, files_directories=None):
+    """Update task info by her id."""
+
     if title is not None:
         db_manager.cursor.execute(
             f"UPDATE {db_manager.task_table_name} SET title = ? WHERE id = ?", (title, task_id))
@@ -126,5 +139,7 @@ def update_task_info_by_id(task_id, title=None, description=None, init_date=None
     return get_task_by_id(task_id)
 
 def delete_task_by_id(task_id):
+    """Delete a task saved in the DataBase by her ID."""
+
     db_manager.cursor.execute(f"DELETE FROM {db_manager.task_table_name} WHERE id = ?", task_id)
     db_manager.connection.commit()
