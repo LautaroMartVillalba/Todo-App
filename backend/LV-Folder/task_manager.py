@@ -1,3 +1,5 @@
+import uuid
+
 import task
 import os
 import json
@@ -5,15 +7,16 @@ import db_manager
 
 default_directory = './app_files/tasks.json'
 
-
 def create_task(title, description, init_date, termination_date, images_directories, files_directories):
     """Create a new Task object and call add_tas_to_json(x) and save_task_in_db(x) methods.
 
     Return Task object."""
-    new_task = task.Task(title, description, init_date, termination_date, images_directories, files_directories)
+    new_task = task.Task(title, description, init_date, termination_date)
 
     add_task_to_json(new_task)
     save_task_in_db(new_task)
+    # save_images_directories_in_db(images_directories)
+    # save_files_directories_in_db(files_directories)
 
     return new_task
 
@@ -40,32 +43,52 @@ def add_task_to_json(task_data):
             "title": task_data.title,
             "description": task_data.description,
             "init_date": task_data.init_date,
-            "termination_date": task_data.termination_date,
-            "images_directories": task_data.images_directories,
-            "files_directories": task_data.files_directories
+            "termination_date": task_data.termination_date
     }
 
     with open(default_directory, 'w', encoding='utf-8') as f:
         json.dump(tasks_data, f, indent=2)
 
+# ////////////////////////////////////DB methods////////////////////////////////////
+
+# -------------------------------------save data methods--------------------------------------
 def save_task_in_db(task_data):
     """Saves the task data in the local DataBase."""
 
     # SQL command.
     db_manager.cursor.execute(
         f"""INSERT INTO {db_manager.task_table_name}
-        (title, description, init_date, termination_date, images_directories, files_directories
-        ) VALUES (?,?,?,?,?,?)""", (
+        (task_id, title, description, init_date, termination_date
+        ) VALUES (?,?,?,?,?)""", (
+            uuid.uuid4().__str__(),
             task_data.title,
             task_data.description,
             task_data.init_date,
-            task_data.termination_date,
-            task_data.images_directories,
-            task_data.files_directories
+            task_data.termination_date
         ))
     # Save changes.
     db_manager.connection.commit()
 
+
+def save_images_directories_in_db(image_directory, task_id):
+    directories = []
+
+    if image_directory is list:
+        for element in image_directory:
+            directories.append(element)
+    else:
+        directories.append(image_directory)
+
+    for each in directories:
+        db_manager.cursor.execute(
+            f"""INSERT INTO {db_manager.images_table_name} VALUES(?,?)""", (each, task_id)
+        )
+
+
+def save_files_directories_in_db(image_directory):
+    pass
+
+# ------------------------------------------get data methods----------------------------------
 def get_all_tasks():
     """Search all tasks saved in the DataBase.
 
@@ -83,9 +106,7 @@ def get_all_tasks():
             "title": element[1],
             "description": element[2],
             "init_date": element[3],
-            "termination_date": element[4],
-            "images_directories": element[5],
-            "files_directories": element[6]
+            "termination_date": element[4]
         }
         task_dicc_list.append(tasks_data)
     return json.dumps(task_dicc_list, ensure_ascii=False, indent=2).encode('utf8').decode()
@@ -96,7 +117,7 @@ def get_task_by_id(task_id):
     Return JSON with task data."""
 
     result = db_manager.cursor.execute(
-    f"""SELECT * FROM {db_manager.task_table_name} WHERE id = {task_id}""").fetchone()
+    f"SELECT * FROM {db_manager.task_table_name} WHERE task_id = '" + task_id + "'").fetchone()
 
     if result is None:
         return None
@@ -106,13 +127,12 @@ def get_task_by_id(task_id):
             "title": result[1],
             "description": result[2],
             "init_date": result[3],
-            "termination_date": result[4],
-            "images_directories": result[5],
-            "files_directories": result[6]
+            "termination_date": result[4]
         }
 
         return json.dumps(result_to_json, ensure_ascii=False, indent=2).encode('utf8').decode()
 
+# ---------------------------------------update data methods---------------------------------------
 def update_task_info_by_id(task_id, title=None, description=None, init_date=None, termination_date=None, images_directories=None, files_directories=None):
     """Update task info by her id."""
 
@@ -138,6 +158,7 @@ def update_task_info_by_id(task_id, title=None, description=None, init_date=None
     db_manager.connection.commit()
     return get_task_by_id(task_id)
 
+# ---------------------------------delete data methods-----------------------------------
 def delete_task_by_id(task_id):
     """Delete a task saved in the DataBase by her ID."""
 
