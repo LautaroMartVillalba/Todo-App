@@ -12,11 +12,12 @@ def create_task(title, description, init_date, termination_date, images_director
 
     Return Task object."""
     new_task = task.Task(title, description, init_date, termination_date)
+    task_id = uuid.uuid4().__str__()
 
     add_task_to_json(new_task)
-    save_task_in_db(new_task)
-    # save_images_directories_in_db(images_directories)
-    # save_files_directories_in_db(files_directories)
+    save_task_in_db(task_id, new_task)
+    save_images_directories_in_db(task_id, images_directories)
+    save_files_directories_in_db(task_id, files_directories)
 
     return new_task
 
@@ -52,7 +53,7 @@ def add_task_to_json(task_data):
 # ////////////////////////////////////DB methods////////////////////////////////////
 
 # -------------------------------------save data methods--------------------------------------
-def save_task_in_db(task_data):
+def save_task_in_db(task_id, task_data):
     """Saves the task data in the local DataBase."""
 
     # SQL command.
@@ -60,7 +61,7 @@ def save_task_in_db(task_data):
         f"""INSERT INTO {db_manager.task_table_name}
         (task_id, title, description, init_date, termination_date
         ) VALUES (?,?,?,?,?)""", (
-            uuid.uuid4().__str__(),
+            task_id,
             task_data.title,
             task_data.description,
             task_data.init_date,
@@ -70,24 +71,38 @@ def save_task_in_db(task_data):
     db_manager.connection.commit()
 
 
-def save_images_directories_in_db(image_directory, task_id):
-    directories = []
+def save_images_directories_in_db(task_id, image_directory):
+    images_directories = []
 
-    if image_directory is list:
+    if isinstance(image_directory, list):
         for element in image_directory:
-            directories.append(element)
+            images_directories.append(element)
     else:
-        directories.append(image_directory)
+        images_directories.append(image_directory)
 
-    for each in directories:
+    for each in images_directories:
+        unique_id = uuid.uuid4().__str__()
         db_manager.cursor.execute(
-            f"""INSERT INTO {db_manager.images_table_name} VALUES(?,?)""", (each, task_id)
+            f"""INSERT INTO {db_manager.images_table_name} (image_id, directory, task_id) VALUES(?,?,?)""", (unique_id, each, task_id)
         )
+    db_manager.connection.commit()
 
 
-def save_files_directories_in_db(image_directory):
-    pass
+def save_files_directories_in_db(task_id, image_directory):
+    file_directories = []
 
+    if isinstance(image_directory, list):
+        for element in image_directory:
+            file_directories.append(element)
+    else:
+        file_directories.append(image_directory)
+
+    for each in file_directories:
+        unique_id = uuid.uuid4().__str__()
+        db_manager.cursor.execute(
+            f"""INSERT INTO {db_manager.files_table_name} (file_id, directory, task_id) VALUES(?,?,?)""", (unique_id, each, task_id)
+        )
+    db_manager.connection.commit()
 # ------------------------------------------get data methods----------------------------------
 def get_all_tasks():
     """Search all tasks saved in the DataBase.
@@ -109,28 +124,49 @@ def get_all_tasks():
             "termination_date": element[4]
         }
         task_dicc_list.append(tasks_data)
-    return json.dumps(task_dicc_list, ensure_ascii=False, indent=2).encode('utf8').decode()
+    print(json.dumps(task_dicc_list, ensure_ascii=False, indent=2).encode('utf8').decode())
 
 def get_task_by_id(task_id):
     """Find and retrieve a task in the DataBase by her ID.
 
     Return JSON with task data."""
 
-    result = db_manager.cursor.execute(
-    f"SELECT * FROM {db_manager.task_table_name} WHERE task_id = '" + task_id + "'").fetchone()
+    task_query = db_manager.cursor.execute(
+    f"select * from {db_manager.task_table_name} where task_id = '" + task_id + "'"
+    ).fetchone()
+    images_query = db_manager.cursor.execute(
+    f"select * from {db_manager.images_table_name} where task_id = '" + task_id + "'"
+    ).fetchall()
+    files_query = db_manager.cursor.execute(
+    f"select * from {db_manager.files_table_name} where task_id = '" + task_id + "'"
+    ).fetchall()
 
-    if result is None:
-        return None
-    else:
-        result_to_json = {
-            "id" : result[0],
-            "title": result[1],
-            "description": result[2],
-            "init_date": result[3],
-            "termination_date": result[4]
+    task_info_in_dict = {
+        "id" : task_query[0],
+        "title": task_query[1],
+        "description": task_query[2],
+        "init_date": task_query[3],
+        "termination_date": task_query[4],
+        "images_directories": None,
+        "files_directories": None
+    }
+
+    images_info_in_dict = {}
+    for each in images_query:
+        images_info_in_dict[each[0]] = {
+            "directory": each[1]
+        }
+    files_info_in_dict = {}
+    for each in files_query:
+        files_info_in_dict[each[0]] = {
+            "directory": each[1]
         }
 
-        return json.dumps(result_to_json, ensure_ascii=False, indent=2).encode('utf8').decode()
+    task_info_in_dict["images_directories"] = images_info_in_dict
+    task_info_in_dict["files_directories"] = files_info_in_dict
+
+
+    print(json.dumps(task_info_in_dict, ensure_ascii=False, indent=2).encode('utf8').decode())
 
 # ---------------------------------------update data methods---------------------------------------
 def update_task_info_by_id(task_id, title=None, description=None, init_date=None, termination_date=None, images_directories=None, files_directories=None):
