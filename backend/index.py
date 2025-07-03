@@ -1,9 +1,9 @@
 import os
 import threading
 from time import time
-
 import webview
 
+#### AQUI CAMBIAS CODIGO LAUTI EH
 
 class Api:
     def fullscreen(self):
@@ -21,52 +21,33 @@ class Api:
         return os.listdir("")
 
 
+# This is for choosing which enviroment is the project running
 def get_entrypoint():
+
+    isdev = os.getenv("DEV")
+    if isdev:
+        return "http://localhost:5173"
+
     def exists(path):
         return os.path.exists(os.path.join(os.path.dirname(__file__), path))
 
-    if exists("../gui/index.html"):  # unfrozen development
+    if exists("../gui/index.html"):
         return "../gui/index.html"
-
-    if exists("../Resources/gui/index.html"):  # frozen py2app
-        return "../Resources/gui/index.html"
-
-    if exists("./gui/index.html"):
-        return "./gui/index.html"
 
     raise Exception("No index.html found")
 
 
-def set_interval(interval):
-    def decorator(function):
-        def wrapper(*args, **kwargs):
-            stopped = threading.Event()
-
-            def loop():  # executed in another thread
-                while not stopped.wait(interval):  # until stopped
-                    function(*args, **kwargs)
-
-            t = threading.Thread(target=loop)
-            t.daemon = True  # stop if the program exits
-            t.start()
-            return stopped
-
-        return wrapper
-
-    return decorator
-
-
 entry = get_entrypoint()
 
-
-@set_interval(1)
-def update_ticker():
-    if len(webview.windows) > 0:
-        webview.windows[0].evaluate_js(
-            'window.pywebview.state.setTicker("%d")' % time()
-        )
-
-
 if __name__ == "__main__":
-    window = webview.create_window("pywebview-react boilerplate", entry, js_api=Api())
-    webview.start(update_ticker, debug=True)
+    window = webview.create_window("Todo-app",
+                                   entry,
+                                   js_api=Api(),
+                                   text_select=True)
+    webview.start()
+
+
+
+
+
+
