@@ -109,22 +109,40 @@ def get_all_tasks():
 
     Return list of JSON with tasks data."""
 
-    result = db_manager.cursor.execute(
-    f"""SELECT * FROM {db_manager.task_table_name}""").fetchall()
+    all_tasks_list = db_manager.cursor.execute(f"SELECT * FROM {db_manager.task_table_name}").fetchall()
 
-    #Parse to json
-    task_dicc_list = []
+    all_tasks_dict = {}
+    for each in all_tasks_list:
 
-    for element in result:
-        tasks_data = {
-            "id" : element[0],
-            "title": element[1],
-            "description": element[2],
-            "init_date": element[3],
-            "termination_date": element[4]
+        images_query = db_manager.cursor.execute(
+        f"select * from {db_manager.images_table_name} where task_id = '" + each[0] + "'"
+        ).fetchall()
+        files_query = db_manager.cursor.execute(
+        f"select * from {db_manager.files_table_name} where task_id = '" + each[0] + "'"
+        ).fetchall()
+
+        images_info_in_dict = {}
+        for direct in images_query:
+            images_info_in_dict[direct[0]] = {
+                "directory": direct[1]
+            }
+        files_info_in_dict = {}
+        for direct in files_query:
+            files_info_in_dict[direct[0]] = {
+                "directory": direct[1]
+            }
+
+        all_tasks_dict[each[0]] = {
+            "title": each[1],
+            "description": each[2],
+            "init_date": each[3],
+            "termination_date": each[4],
+            "images_directories": images_info_in_dict,
+            "files_directories": files_info_in_dict
         }
-        task_dicc_list.append(tasks_data)
-    print(json.dumps(task_dicc_list, ensure_ascii=False, indent=2).encode('utf8').decode())
+
+    return json.dumps(all_tasks_dict, indent=2, ensure_ascii=False).encode('utf8').decode()
+
 
 def get_task_by_id(task_id):
     """Find and retrieve a task in the DataBase by her ID.
@@ -166,7 +184,7 @@ def get_task_by_id(task_id):
     task_info_in_dict["files_directories"] = files_info_in_dict
 
 
-    print(json.dumps(task_info_in_dict, ensure_ascii=False, indent=2).encode('utf8').decode())
+    return json.dumps(task_info_in_dict, ensure_ascii=False, indent=2).encode('utf8').decode()
 
 # ---------------------------------------update data methods---------------------------------------
 def update_task_info_by_id(task_id, title=None, description=None, init_date=None, termination_date=None, images_directories=None, files_directories=None):
