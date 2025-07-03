@@ -1,0 +1,12 @@
+[project]
+name = "todo-app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "py2app>=0.28.8 ; sys_platform == 'darwin'",
+    "pyinstaller>=6.14.1 ; sys_platform != 'darwin'",
+    "pywebview[gtj,qt]>=5.4",
+    "setuptools>=80.9.0",
+]
