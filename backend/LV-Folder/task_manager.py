@@ -183,38 +183,68 @@ def get_task_by_id(task_id):
     task_info_in_dict["images_directories"] = images_info_in_dict
     task_info_in_dict["files_directories"] = files_info_in_dict
 
-
     return json.dumps(task_info_in_dict, ensure_ascii=False, indent=2).encode('utf8').decode()
 
 # ---------------------------------------update data methods---------------------------------------
-def update_task_info_by_id(task_id, title=None, description=None, init_date=None, termination_date=None, images_directories=None, files_directories=None):
+def update_task_info_by_id(task_id, title=None, description=None, init_date=None, termination_date=None):
     """Update task info by her id."""
 
     if title is not None:
         db_manager.cursor.execute(
-            f"UPDATE {db_manager.task_table_name} SET title = ? WHERE id = ?", (title, task_id))
+            f"UPDATE {db_manager.task_table_name} SET title = ? WHERE '" + task_id + "'", title
+        )
     if description is not None:
         db_manager.cursor.execute(
-            f"UPDATE {db_manager.task_table_name} SET description = ? WHERE id = ?", (description, task_id))
+            f"UPDATE {db_manager.task_table_name} SET description = ? WHERE '" + task_id + "'", description
+        )
     if init_date is not None:
         db_manager.cursor.execute(
-            f"UPDATE {db_manager.task_table_name} SET init_date = ? WHERE id = ?", (init_date, task_id))
+            f"UPDATE {db_manager.task_table_name} SET init_date = ? WHERE '" + task_id + "'", init_date
+        )
     if termination_date is not None:
         db_manager.cursor.execute(
-            f"UPDATE {db_manager.task_table_name} SET termination_date = ? WHERE id = ?", (termination_date, task_id))
-    if images_directories is not None:
-        db_manager.cursor.execute(
-            f"UPDATE {db_manager.task_table_name} SET images_directories = ? WHERE id = ?", (images_directories, task_id))
-    if files_directories is not None:
-        db_manager.cursor.execute(
-            f"UPDATE {db_manager.task_table_name} SET files_directories = ? WHERE id = ?", (files_directories, task_id))
+            f"UPDATE {db_manager.task_table_name} SET termination_date = ? WHERE '" + task_id + "'", termination_date
+        )
 
     db_manager.connection.commit()
     return get_task_by_id(task_id)
 
+def update_images_direct_info_by_id(task_id, image_id, directory):
+    db_manager.cursor.execute(
+        f"UPDATE {db_manager.images_table_name} SET directory = ? WHERE '" + image_id + "'", directory
+    )
+    db_manager.connection.commit()
+
+    return get_task_by_id(task_id)
+
+def update_files_direct_info_by_id(task_id, file_id, directory):
+    db_manager.cursor.execute(
+        f"UPDATE {db_manager.files_table_name} SET directory = ? WHERE file_id = ?", (directory, file_id)
+    )
+    db_manager.connection.commit()
+
+    return get_task_by_id(task_id)
+
 # ---------------------------------delete data methods-----------------------------------
-def delete_task_by_id(task_id):
+def delete_task_images_and_files_by_task_id(task_id):
     """Delete a task saved in the DataBase by her ID."""
 
-    db_manager.cursor.execute(f"DELETE FROM {db_manager.task_table_name} WHERE id = ?", task_id)
+    db_manager.cursor.execute(f"DELETE FROM {db_manager.task_table_name} WHERE task_id = '" + task_id + "'"
+    )
+    db_manager.cursor.execute(f"DELETE FROM {db_manager.images_table_name} WHERE task_id = '" + task_id + "'"
+    )
+    db_manager.cursor.execute(f"DELETE FROM {db_manager.files_table_name} WHERE task_id = '" + task_id + "'"
+    )
+    db_manager.connection.commit()
+
+def delete_image_by_id(image_id):
+    db_manager.cursor.execute(
+        f"DELETE FROM {db_manager.images_table_name} WHERE image_id = '" + image_id + "'"
+    )
+    db_manager.connection.commit()
+
+def delete_file_by_id(file_id):
+    db_manager.cursor.execute(
+        f"DELETE FROM {db_manager.files_table_name} WHERE file_id = '" + file_id + "'"
+    )
     db_manager.connection.commit()
