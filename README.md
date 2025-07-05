@@ -8,18 +8,13 @@ this project was made using:
 #### Development
 it is recommended that you have both `uv` and `node` installed in your machine.
 
-**install packages**
 ```bash
-# Inside the folder
-uv sync
-
-cd ../frontend
-pnpm i
+# In the root project
+pnpm run setup
+pnpm run dev
 ```
 
-Then you can normally use pnpm for running the project
+Then you can just use the other scripts to either build or to manage both the front and back
 
-```bash
-pnpm
-
-```
+#### TODO
+- docker container for creating both windows and linux binaries

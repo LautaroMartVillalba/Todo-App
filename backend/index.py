@@ -1,9 +1,7 @@
 import os
-import threading
+import sys
 from time import time
 import webview
-
-#### AQUI CAMBIAS CODIGO LAUTI EH
 
 class Api:
     def fullscreen(self):
@@ -27,12 +25,17 @@ def get_entrypoint():
     isdev = os.getenv("DEV")
     if isdev:
         return "http://localhost:5173"
+    
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 
-    def exists(path):
-        return os.path.exists(os.path.join(os.path.dirname(__file__), path))
+    paths = [
+        os.path.join(base_path, "dist", "front", "index.html"),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../dist/front/index.html")),
+    ]
 
-    if exists("../gui/index.html"):
-        return "../gui/index.html"
+    for path in paths:
+        if os.path.exists(path):
+            return path 
 
     raise Exception("No index.html found")
 
