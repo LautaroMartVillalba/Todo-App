@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:app": "cd ../backend && DEV=1 uv run index.py",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build --outDir ../dist/front --emptyOutDir",
     "preview": "vite preview"
   },
   "dependencies": {

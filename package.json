@@ -1,0 +1,15 @@
+{
+    "name": "task_runner",
+    "scripts": {
+        "setup": "cd frontend && pnpm i && cd ../backend && uv sync",
+        "dev:front": "pnpm --filter frontend dev",
+        "dev:back": "cd backend && DEV=1 uv run index.py",
+        "dev": "concurrently -k -n FRONTEND,BACKEND -c blue,green 'pnpm run dev:front' 'pnpm run dev:back'",
+        "app": "cd backend && uv run index.py",
+        "build:front": "pnpm --filter frontend build",
+        "build:linux": "pnpm run build:front && backend/.venv/bin/pyinstaller linux.spec --distpath dist/bin --clean --noconfirm"
+    },
+    "devDependencies": {
+        "concurrently": "^9.2.0"
+    }
+}
