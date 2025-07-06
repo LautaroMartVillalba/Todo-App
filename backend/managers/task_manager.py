@@ -1,11 +1,15 @@
 import uuid
-
-import task
 import os
 import json
-import db_manager
+from pathlib import Path
 
-default_directory = './app_files/tasks.json'
+import files_manager
+import images_manager
+from backend.models import task
+from backend.database import db_manager
+
+BASE_DIR = Path().resolve().parent
+default_directory = BASE_DIR / 'database/tasks.json'
 
 def create_task(title, description, init_date, termination_date, images_directories, files_directories):
     """Create a new Task object and call add_tas_to_json(x) and save_task_in_db(x) methods.
@@ -16,8 +20,8 @@ def create_task(title, description, init_date, termination_date, images_director
 
     add_task_to_json(new_task)
     save_task_in_db(task_id, new_task)
-    save_images_directories_in_db(task_id, images_directories)
-    save_files_directories_in_db(task_id, files_directories)
+    images_manager.save_images_directories_in_db(task_id, images_directories)
+    files_manager. save_files_directories_in_db(task_id, files_directories)
 
     return new_task
 
@@ -71,38 +75,7 @@ def save_task_in_db(task_id, task_data):
     db_manager.connection.commit()
 
 
-def save_images_directories_in_db(task_id, image_directory):
-    images_directories = []
 
-    if isinstance(image_directory, list):
-        for element in image_directory:
-            images_directories.append(element)
-    else:
-        images_directories.append(image_directory)
-
-    for each in images_directories:
-        unique_id = uuid.uuid4().__str__()
-        db_manager.cursor.execute(
-            f"""INSERT INTO {db_manager.images_table_name} (image_id, directory, task_id) VALUES(?,?,?)""", (unique_id, each, task_id)
-        )
-    db_manager.connection.commit()
-
-
-def save_files_directories_in_db(task_id, image_directory):
-    file_directories = []
-
-    if isinstance(image_directory, list):
-        for element in image_directory:
-            file_directories.append(element)
-    else:
-        file_directories.append(image_directory)
-
-    for each in file_directories:
-        unique_id = uuid.uuid4().__str__()
-        db_manager.cursor.execute(
-            f"""INSERT INTO {db_manager.files_table_name} (file_id, directory, task_id) VALUES(?,?,?)""", (unique_id, each, task_id)
-        )
-    db_manager.connection.commit()
 # ------------------------------------------get data methods----------------------------------
 def get_all_tasks():
     """Search all tasks saved in the DataBase.
@@ -209,42 +182,18 @@ def update_task_info_by_id(task_id, title=None, description=None, init_date=None
     db_manager.connection.commit()
     return get_task_by_id(task_id)
 
-def update_images_direct_info_by_id(task_id, image_id, directory):
-    db_manager.cursor.execute(
-        f"UPDATE {db_manager.images_table_name} SET directory = ? WHERE '" + image_id + "'", directory
-    )
-    db_manager.connection.commit()
 
-    return get_task_by_id(task_id)
-
-def update_files_direct_info_by_id(task_id, file_id, directory):
-    db_manager.cursor.execute(
-        f"UPDATE {db_manager.files_table_name} SET directory = ? WHERE file_id = ?", (directory, file_id)
-    )
-    db_manager.connection.commit()
-
-    return get_task_by_id(task_id)
 
 # ---------------------------------delete data methods-----------------------------------
 def delete_task_images_and_files_by_task_id(task_id):
     """Delete a task saved in the DataBase by her ID."""
 
     db_manager.cursor.execute(f"DELETE FROM {db_manager.task_table_name} WHERE task_id = '" + task_id + "'"
-    )
+                              )
     db_manager.cursor.execute(f"DELETE FROM {db_manager.images_table_name} WHERE task_id = '" + task_id + "'"
-    )
+                              )
     db_manager.cursor.execute(f"DELETE FROM {db_manager.files_table_name} WHERE task_id = '" + task_id + "'"
-    )
+                              )
     db_manager.connection.commit()
 
-def delete_image_by_id(image_id):
-    db_manager.cursor.execute(
-        f"DELETE FROM {db_manager.images_table_name} WHERE image_id = '" + image_id + "'"
-    )
-    db_manager.connection.commit()
-
-def delete_file_by_id(file_id):
-    db_manager.cursor.execute(
-        f"DELETE FROM {db_manager.files_table_name} WHERE file_id = '" + file_id + "'"
-    )
-    db_manager.connection.commit()
+create_task('a','a','a','a','a','a')
