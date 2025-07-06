@@ -33,3 +33,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# local db
+backend/database/tasks.json
+backend/database/*.sqlite

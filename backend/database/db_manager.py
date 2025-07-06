@@ -1,6 +1,10 @@
 import sqlite3
+from pathlib import Path
 
-connection = sqlite3.connect("tasks_db")
+BASE_DIR = Path().resolve().parent
+DB_PATH = BASE_DIR / 'database' / 'tasks_db.sqlite'
+
+connection = sqlite3.connect(DB_PATH)
 task_table_name = 'task_table'
 images_table_name = 'images_table'
 files_table_name = 'files_table'
