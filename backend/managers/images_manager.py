@@ -2,10 +2,9 @@ import json
 import uuid
 
 from backend.database import db_manager
-from backend.managers.task_manager import get_task_by_id
-
 
 def save_images_directories_in_db(task_id, image_directory):
+    db_manager.init_db()
     images_direct = []
 
     if isinstance(image_directory, list):
@@ -20,8 +19,11 @@ def save_images_directories_in_db(task_id, image_directory):
             f"""INSERT INTO {db_manager.images_table_name} (image_id, directory, task_id) VALUES(?,?,?)""", (unique_id, each, task_id)
         )
     db_manager.connection.commit()
+    db_manager.connection.close()
+
 
 def get_image_by_id(image_id):
+    db_manager.init_db()
     query = db_manager.cursor.execute(
         f"select * from {db_manager.images_table_name} where image_id = '" + image_id + "'"
     ).fetchone()
@@ -31,9 +33,11 @@ def get_image_by_id(image_id):
         "directory": query[1]
     }
 
+    db_manager.connection.close()
     return json.dumps(image_dict, ensure_ascii=False, indent=2).encode('utf8').decode()
 
 def get_image_by_task_id(task_id):
+    db_manager.init_db()
     images_list = db_manager.cursor.execute(
         f"select * from {db_manager.images_table_name} where task_id = '" + task_id + "'"
     ).fetchall()
@@ -45,22 +49,20 @@ def get_image_by_task_id(task_id):
             "directory": each[1]
         }
 
-    return json.dumps(images_dict, ensure_ascii=False, indent=2).encode('utf8').decode()
+    db_manager.connection.close()
+    return images_dict
 
-def update_images_direct_info_by_id(task_id, image_id, directory):
+def update_images_direct_info_by_id(image_id, directory):
+    db_manager.init_db()
     db_manager.cursor.execute(
         f"UPDATE {db_manager.images_table_name} SET directory = ? WHERE '" + image_id + "'", directory
     )
     db_manager.connection.commit()
 
-    return get_task_by_id(task_id)
-
-
 def delete_image_by_id(image_id):
+    db_manager.init_db()
     db_manager.cursor.execute(
         f"DELETE FROM {db_manager.images_table_name} WHERE image_id = '" + image_id + "'"
     )
     db_manager.connection.commit()
-
-# get_image_by_id('034b2245-5896-4c66-9e3f-1700c499ba6a')
-get_image_by_task_id('aaf0ac2b-ee0a-450e-9647-6fb698849ae9')
+    db_manager.connection.close()

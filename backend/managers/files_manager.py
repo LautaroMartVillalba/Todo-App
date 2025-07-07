@@ -1,9 +1,9 @@
 from backend.database import db_manager
 import uuid
 import json
-from task_manager import get_task_by_id
 
 def save_files_directories_in_db(task_id, image_directory):
+    db_manager.init_db()
     file_direct = []
 
     if isinstance(image_directory, list):
@@ -18,9 +18,12 @@ def save_files_directories_in_db(task_id, image_directory):
             f"""INSERT INTO {db_manager.files_table_name} (file_id, directory, task_id) VALUES(?,?,?)""", (unique_id, each, task_id)
         )
     db_manager.connection.commit()
+    db_manager.connection.close()
+
 
 
 def get_file_by_id(file_id):
+    db_manager.init_db()
     query = db_manager.cursor.execute(
         f"select * from {db_manager.files_table_name} where file_id = '" + file_id + "'"
     ).fetchone()
@@ -30,9 +33,11 @@ def get_file_by_id(file_id):
         "directory": query[1]
     }
 
+    db_manager.connection.close()
     return json.dumps(file_dict, ensure_ascii=False, indent=2).encode('utf8').decode()
 
 def get_file_by_task_id(task_id):
+    db_manager.init_db()
     images_list = db_manager.cursor.execute(
         f"select * from {db_manager.files_table_name} where task_id = '" + task_id + "'"
     ).fetchall()
@@ -44,18 +49,22 @@ def get_file_by_task_id(task_id):
             "directory": each[1]
         }
 
+    db_manager.connection.close()
     return json.dumps(files_dict, ensure_ascii=False, indent=2).encode('utf8').decode()
 
-def update_files_direct_info_by_id(task_id, file_id, directory):
+def update_files_direct_info_by_id(file_id, directory):
+    db_manager.init_db()
     db_manager.cursor.execute(
         f"UPDATE {db_manager.files_table_name} SET directory = ? WHERE file_id = ?", (directory, file_id)
     )
     db_manager.connection.commit()
+    db_manager.connection.close()
 
-    return get_task_by_id(task_id)
 
 def delete_file_by_id(file_id):
+    db_manager.init_db()
     db_manager.cursor.execute(
         f"DELETE FROM {db_manager.files_table_name} WHERE file_id = '" + file_id + "'"
     )
     db_manager.connection.commit()
+    db_manager.connection.close()
