@@ -31,12 +31,23 @@ def init_db():
 
     cursor.close()
 
+shared_connection = None
+
+def set_shared_connection(connection):
+    global shared_connection
+    shared_connection = connection
+
 @contextmanager
 def call_new_cursor(data_base_dir):
-    connection = sqlite3.connect(data_base_dir)
-    try:
-        cursor = connection.cursor()
-        yield cursor, connection
-        connection.commit()
-    finally:
-        connection.close()
+    if shared_connection:
+        cursor = shared_connection.cursor()
+        yield cursor, shared_connection
+        shared_connection.commit()
+    else:
+        connection = sqlite3.connect(DB_PATH)
+        try:
+            cursor = connection.cursor()
+            yield cursor, connection
+            connection.commit()
+        finally:
+            connection.close()

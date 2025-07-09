@@ -164,6 +164,3 @@ def delete_task_images_and_files_by_task_id(task_id):
                                   )
         cursor.execute(f"DELETE FROM {db_manager.files_table_name} WHERE task_id = '" + task_id + "'"
                               )
-
-# create_task('caribeños','empanadas','travestis','falopa','porongas', 'poronga')
-print(get_task_by_id('a2cb2e50-e988-44c0-9e00-61d55d5f2815'))
