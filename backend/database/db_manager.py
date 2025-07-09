@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
 BASE_DIR = Path().resolve().parent
@@ -7,13 +8,9 @@ DB_PATH = BASE_DIR / 'database' / 'tasks_db.sqlite'
 task_table_name = 'task_table'
 images_table_name = 'images_table'
 files_table_name = 'files_table'
-connection = sqlite3.connect(DB_PATH)
-cursor = connection.cursor()
 
-def init_db(db_path=DB_PATH):
-    global connection, cursor
-    connection = sqlite3.connect(db_path)
-    cursor = connection.cursor()
+def init_db():
+    cursor, connection = call_new_cursor(DB_PATH)
 
     cursor.execute(
         "CREATE TABLE IF NOT EXISTS " + task_table_name + "(task_id TEXT,"
@@ -32,4 +29,14 @@ def init_db(db_path=DB_PATH):
                                                            " task_id INTEGER,"
                                                            "FOREIGN KEY (task_id) REFERENCES " + task_table_name + "(task_id))")
 
+    cursor.close()
 
+@contextmanager
+def call_new_cursor(data_base_dir):
+    connection = sqlite3.connect(data_base_dir)
+    try:
+        cursor = connection.cursor()
+        yield cursor, connection
+        connection.commit()
+    finally:
+        connection.close()
