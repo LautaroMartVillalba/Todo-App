@@ -43,26 +43,24 @@ def init_db():
         - images_table and files_table reference task_table through a foreign key
           relationship on `task_id`.
     """
-    cursor, connection = call_new_cursor(DB_PATH)
+    with call_new_cursor() as (cursor, connection):
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS " + task_table_name + "(task_id TEXT,"
+                                                              " title,"
+                                                              " description,"
+                                                              " init_date,"
+                                                              " termination_date)")
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS " + images_table_name + "(image_id TEXT PRIMARY KEY,"
+                                                                " directory TEXT,"
+                                                                " task_id INTEGER,"
+                                                                "FOREIGN KEY (task_id) REFERENCES " + task_table_name + "(task_id))")
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS " + files_table_name + "(file_id TEXT PRIMARY KEY,"
+                                                               " directory TEXT,"
+                                                               " task_id INTEGER,"
+                                                               "FOREIGN KEY (task_id) REFERENCES " + task_table_name + "(task_id))")
 
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS " + task_table_name + "(task_id TEXT,"
-                                                          " title,"
-                                                          " description,"
-                                                          " init_date,"
-                                                          " termination_date)")
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS " + images_table_name + "(image_id TEXT PRIMARY KEY,"
-                                                            " directory TEXT,"
-                                                            " task_id INTEGER,"
-                                                            "FOREIGN KEY (task_id) REFERENCES " + task_table_name + "(task_id))")
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS " + files_table_name + "(file_id TEXT PRIMARY KEY,"
-                                                           " directory TEXT,"
-                                                           " task_id INTEGER,"
-                                                           "FOREIGN KEY (task_id) REFERENCES " + task_table_name + "(task_id))")
-
-    cursor.close()
 
 shared_connection = None
 
@@ -104,3 +102,5 @@ def call_new_cursor():
             connection.commit()
         finally:
             connection.close()
+
+init_db()

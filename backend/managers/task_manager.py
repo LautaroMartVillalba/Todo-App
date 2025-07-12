@@ -90,7 +90,7 @@ def save_task_in_db(task_id, task_data):
         task_id (str): UUID used as the unique identifier for the task.
         task_data (Task): Task object containing metadata to store.
     """
-    with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+    with db_manager.call_new_cursor() as (cursor, connection):
         cursor.execute(
             f"""INSERT INTO {db_manager.task_table_name}
             (task_id, title, description, init_date, termination_date
@@ -114,7 +114,7 @@ def get_all_tasks():
               of task metadata and associated directories.
     """
     all_tasks_dict = {}
-    with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+    with db_manager.call_new_cursor() as (cursor, connection):
         all_tasks_list = cursor.execute(f"SELECT * FROM {db_manager.task_table_name}").fetchall()
         for each in all_tasks_list:
 
@@ -141,7 +141,7 @@ def get_task_by_id(task_id):
         dict: Task metadata along with image and file directories.
     """
 
-    with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+    with db_manager.call_new_cursor() as (cursor, connection):
         task_query = cursor.execute(
         f"select * from {db_manager.task_table_name} where task_id = '" + task_id + "'"
         ).fetchone()
@@ -179,22 +179,22 @@ def update_task_info_by_id(task_id, title=None, description=None, init_date=None
     """
 
     if title is not None:
-        with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+        with db_manager.call_new_cursor() as (cursor, connection):
             cursor.execute(
                 f"UPDATE {db_manager.task_table_name} SET title = ? WHERE task_id ='" + task_id + "'", title
             )
     if description is not None:
-        with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+        with db_manager.call_new_cursor() as (cursor, connection):
             cursor.execute(
                 f"UPDATE {db_manager.task_table_name} SET description = ? WHERE task_id ='" + task_id + "'", description
             )
     if init_date is not None:
-        with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+        with db_manager.call_new_cursor() as (cursor, connection):
             cursor.execute(
                 f"UPDATE {db_manager.task_table_name} SET init_date = ? WHERE task_id ='" + task_id + "'", init_date
             )
     if termination_date is not None:
-        with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+        with db_manager.call_new_cursor() as (cursor, connection):
             cursor.execute(
                 f"UPDATE {db_manager.task_table_name} SET termination_date = ? WHERE task_id ='" + task_id + "'", termination_date
             )
@@ -217,7 +217,7 @@ def delete_task_images_and_files_by_task_id(task_id):
         task_id (str): UUID of the task to be deleted.
     """
 
-    with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+    with db_manager.call_new_cursor() as (cursor, connection):
         cursor.execute(f"DELETE FROM {db_manager.task_table_name} WHERE task_id = '" + task_id + "'"
                                   )
         cursor.execute(f"DELETE FROM {db_manager.images_table_name} WHERE task_id = '" + task_id + "'"
