@@ -14,8 +14,12 @@ Functions:
 """
 
 import uuid
-
+import os
+import shutil
+from pathlib import Path
 from backend.database import db_manager
+
+user_images_directory = Path(Path().resolve().parent / 'user_folder' / 'images')
 
 def save_images_directories_in_db(task_id, image_directory):
     """
@@ -31,13 +35,20 @@ def save_images_directories_in_db(task_id, image_directory):
 
     if isinstance(image_directory, list):
         for element in image_directory:
-            images_direct.append(element)
+            images_direct.append(element.__str__())
     else:
-        images_direct.append(image_directory)
+        images_direct.append(image_directory.__str__())
+
+    if not os.path.exists(user_images_directory / f'{task_id}'):
+        os.makedirs(user_images_directory / f'{task_id}')
 
     for each in images_direct:
-        with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+        with db_manager.call_new_cursor() as (cursor, connection):
             unique_id = uuid.uuid4().__str__()
+
+            file_name = unique_id + '_' + str(Path(each).name)
+
+            shutil.copy2(each, user_images_directory / f'{task_id}' / file_name)
             cursor.execute(
                 f"""INSERT INTO {db_manager.images_table_name} (image_id, directory, task_id) VALUES(?,?,?)""", (unique_id, each, task_id)
             )
@@ -54,7 +65,7 @@ def get_image_by_id(image_id):
         dict: A dictionary containing the image ID and its corresponding directory.
               Format: {"image_id": ..., "directory": ...}
     """
-    with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+    with db_manager.call_new_cursor() as (cursor, connection):
         query = cursor.execute(
             f"select * from {db_manager.images_table_name} where image_id = '" + image_id + "'"
         ).fetchone()
@@ -82,7 +93,7 @@ def get_image_by_task_id(task_id):
                   ...
               }
     """
-    with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+    with db_manager.call_new_cursor() as (cursor, connection):
         images_list = cursor.execute(
             f"select * from {db_manager.images_table_name} where task_id = '" + task_id + "'"
         ).fetchall()
@@ -104,7 +115,7 @@ def update_images_direct_info_by_id(image_id, directory):
         image_id (str): UUID of the image record to be updated.
         directory (str): New directory path to replace the old one.
     """
-    with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+    with db_manager.call_new_cursor() as (cursor, connection):
         cursor.execute(
             f"UPDATE {db_manager.images_table_name} SET directory = ? WHERE image_id ='" + image_id + "'", directory
         )
@@ -116,7 +127,7 @@ def delete_image_by_id(image_id):
     Args:
         image_id (str): UUID of the image record to delete.
     """
-    with db_manager.call_new_cursor(db_manager.DB_PATH) as (cursor, connection):
+    with db_manager.call_new_cursor() as (cursor, connection):
         cursor.execute(
            f"DELETE FROM {db_manager.images_table_name} WHERE image_id = '" + image_id + "'"
         )
