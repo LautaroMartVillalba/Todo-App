@@ -43,42 +43,11 @@ def create_task(title, description, init_date, termination_date, images_director
     new_task = task.Task(title, description, init_date, termination_date)
     task_id = uuid.uuid4().__str__()
 
-    add_task_to_json(new_task)
     save_task_in_db(task_id, new_task)
     images_manager.save_images_directories_in_db(task_id, images_directories)
     files_manager.save_files_directories_in_db(task_id, files_directories)
 
     return get_task_by_id(task_id)
-
-def add_task_to_json(task_data):
-    """
-    Appends the given task to a JSON file.
-
-    Args:
-        task_data (Task): The task object to be stored with attributes such as
-                          title, description, init_date, and termination_date.
-    """
-    if not os.path.isfile(default_directory):
-        create_json_at_first_time = open(default_directory, 'w', encoding='utf-8')
-        json.dump({}, create_json_at_first_time, indent=2)
-
-    with open(default_directory, 'r', encoding='utf-8') as json_read:
-        try:
-            tasks_data = json.load(json_read)
-        except json.JSONDecodeError:
-            tasks_data = {}
-
-    task_name = len(tasks_data) +1
-
-    tasks_data[task_name] = {
-            "title": task_data.title,
-            "description": task_data.description,
-            "init_date": task_data.init_date,
-            "termination_date": task_data.termination_date
-    }
-
-    with open(default_directory, 'w', encoding='utf-8') as f:
-        json.dump(tasks_data, f, indent=2)
 
 # ////////////////////////////////////DB methods////////////////////////////////////
 
