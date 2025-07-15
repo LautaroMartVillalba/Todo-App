@@ -7,11 +7,5 @@ class Task:
         self.description = description
         self.init_date = init_date
         self.termination_date = termination_date
-        # if images_directories is None:
-        self.images_directories = []
-        # else:
-        self.images_directories = images_directories
-        # if files_directories is None:
-        self.files_directories = []
-        # else:
-        self.files_directories = files_directories
+        self.images_directories = images_directories if images_directories is not None else []
+        self.files_directories = files_directories if files_directories is not None else []

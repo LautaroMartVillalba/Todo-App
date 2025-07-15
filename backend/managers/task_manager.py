@@ -10,12 +10,12 @@ Attributes:
     BASE_DIR (Path): Root directory of the project.
     default_directory (Path): Full path to the default JSON file for storing task data.
 """
-
+import datetime
 import uuid
-import os
+import logging
 import json
-from pathlib import Path
 
+from pathlib import Path
 from backend.managers import files_manager
 from backend.managers import images_manager
 from backend.models import task
@@ -23,6 +23,7 @@ from backend.database import db_manager
 
 BASE_DIR = Path().resolve().parent
 default_directory = BASE_DIR / 'database/tasks.json'
+logger = logging.getLogger()
 
 def create_task(title, description, init_date, termination_date, images_directories, files_directories):
     """
@@ -40,14 +41,26 @@ def create_task(title, description, init_date, termination_date, images_director
     Returns:
         dict: The complete task object with metadata and related files/images.
     """
+    # It does not check if images_directories and/or files_directories are empty String chain or None cause don't are
+    # mandatory data
+    if not title or not description or not init_date or not termination_date:
+        raise RuntimeError('Title, description, init date and termination date are mandatory data')
+
     new_task = task.Task(title, description, init_date, termination_date)
+    # Primary key to task registers
     task_id = uuid.uuid4().__str__()
 
-    save_task_in_db(task_id, new_task)
-    images_manager.save_images_directories_in_db(task_id, images_directories)
-    files_manager.save_files_directories_in_db(task_id, files_directories)
+    try:
+        save_task_in_db(task_id, new_task)
+        images_manager.save_images_directories_in_db(task_id, images_directories)
+        files_manager.save_files_directories_in_db(task_id, files_directories)
+        logger.info('Call to DB methods was successfully executed.')
+        return get_task_by_id(task_id)
+    except Exception as e:
+        delete_task_images_and_files_by_task_id(task_id)
+        logger.error('All task related data was deleted cause an oc')
+        raise RuntimeError (f'An error has occur during database persist flow. {e}')
 
-    return get_task_by_id(task_id)
 
 # ////////////////////////////////////DB methods////////////////////////////////////
 
@@ -70,7 +83,7 @@ def save_task_in_db(task_id, task_data):
                 task_data.init_date,
                 task_data.termination_date
             ))
-        connection.commit()
+    logger.info('Task saved successfully.')
 
 
 # ------------------------------------------get data methods----------------------------------
@@ -85,17 +98,24 @@ def get_all_tasks():
     all_tasks_dict = {}
     with db_manager.call_new_cursor() as (cursor, connection):
         all_tasks_list = cursor.execute(f"SELECT * FROM {db_manager.task_table_name}").fetchall()
-        for each in all_tasks_list:
-
-            all_tasks_dict[each[0]] = {
-                "title": each[1],
-                "description": each[2],
-                "init_date": each[3],
-                "termination_date": each[4],
-                "images_directories": images_manager.get_image_by_task_id(each[0]),
-                "files_directories": files_manager.get_file_by_task_id(each[0])
-            }
-
+        if len(all_tasks_list) == 0:
+            return {}
+        else:
+            for each in all_tasks_list:
+                # task_table column formate makes possible that:
+                # [0]-> id column
+                # [1]-> title column
+                # [2]-> description column
+                # [3]-> init_date column
+                # [4]-> termination_date column
+                all_tasks_dict[each[0]] = {
+                    "title": each[1],
+                    "description": each[2],
+                    "init_date": each[3],
+                    "termination_date": each[4],
+                    "images_directories": images_manager.get_image_by_task_id(each[0]),
+                    "files_directories": files_manager.get_file_by_task_id(each[0])
+                }
     return all_tasks_dict
 
 
@@ -115,20 +135,30 @@ def get_task_by_id(task_id):
         f"select * from {db_manager.task_table_name} where task_id = '" + task_id + "'"
         ).fetchone()
 
-    task_info_in_dict = {
-        "id" : task_query[0],
-        "title": task_query[1],
-        "description": task_query[2],
-        "init_date": task_query[3],
-        "termination_date": task_query[4],
-        "images_directories": images_manager.get_image_by_task_id(task_id),
-        "files_directories": files_manager.get_file_by_task_id(task_id)
-    }
-
-    return task_info_in_dict
+    if task_query is None:
+        return {}
+    else:
+        task_info_in_dict = {
+            "id" : task_query[0],
+            "title": task_query[1],
+            "description": task_query[2],
+            "init_date": task_query[3],
+            "termination_date": task_query[4],
+            "images_directories": images_manager.get_image_by_task_id(task_id),
+            "files_directories": files_manager.get_file_by_task_id(task_id)
+        }
+        return task_info_in_dict
 
 # ---------------------------------------update data methods---------------------------------------
-def update_task_info_by_id(task_id, title=None, description=None, init_date=None, termination_date=None, image_id =None, new_image_directory=None, file_id =None, new_file_directory=None):
+def update_task_info_by_id(task_id,
+                           title=None,
+                           description=None,
+                           init_date=None,
+                           termination_date=None,
+                           image_id =None,
+                           new_image_directory=None,
+                           file_id =None,
+                           new_file_directory=None):
     """
     Updates task metadata or associated directories based on provided arguments.
 
@@ -147,35 +177,33 @@ def update_task_info_by_id(task_id, title=None, description=None, init_date=None
         dict: Updated task metadata and associated file/image directories.
     """
 
+    fields = []
+    values = []
     if title is not None:
-        with db_manager.call_new_cursor() as (cursor, connection):
-            cursor.execute(
-                f"UPDATE {db_manager.task_table_name} SET title = ? WHERE task_id ='" + task_id + "'", title
-            )
+        fields.append('title = ?')
+        values.append(title)
     if description is not None:
-        with db_manager.call_new_cursor() as (cursor, connection):
-            cursor.execute(
-                f"UPDATE {db_manager.task_table_name} SET description = ? WHERE task_id ='" + task_id + "'", description
-            )
+        fields.append('description = ?')
+        values.append(description)
     if init_date is not None:
-        with db_manager.call_new_cursor() as (cursor, connection):
-            cursor.execute(
-                f"UPDATE {db_manager.task_table_name} SET init_date = ? WHERE task_id ='" + task_id + "'", init_date
-            )
+        fields.append('init_date = ?')
+        values.append(init_date)
     if termination_date is not None:
+        fields.append('termination_date = ?')
+        values.append(termination_date)
+
+    if fields:
         with db_manager.call_new_cursor() as (cursor, connection):
-            cursor.execute(
-                f"UPDATE {db_manager.task_table_name} SET termination_date = ? WHERE task_id ='" + task_id + "'", termination_date
-            )
+            sql = f'UPDATE {db_manager.task_table_name} SET {', '.join(fields)} WHERE task_id = ?'
+            values.append(task_id)
+            cursor.execute(sql, values)
+
     if image_id is not None and new_image_directory is not None:
         images_manager.update_images_direct_info_by_id(image_id, new_image_directory)
     if file_id is not None and new_file_directory is not None:
         files_manager.update_files_direct_info_by_id(file_id, new_file_directory)
 
-    modified_task = get_task_by_id(task_id)
-    return modified_task
-
-
+    return get_task_by_id(task_id)
 
 # ---------------------------------delete data methods-----------------------------------
 def delete_task_images_and_files_by_task_id(task_id):
@@ -185,11 +213,8 @@ def delete_task_images_and_files_by_task_id(task_id):
     Args:
         task_id (str): UUID of the task to be deleted.
     """
-
     with db_manager.call_new_cursor() as (cursor, connection):
-        cursor.execute(f"DELETE FROM {db_manager.task_table_name} WHERE task_id = '" + task_id + "'"
-                                  )
-        cursor.execute(f"DELETE FROM {db_manager.images_table_name} WHERE task_id = '" + task_id + "'"
-                                  )
-        cursor.execute(f"DELETE FROM {db_manager.files_table_name} WHERE task_id = '" + task_id + "'"
-                              )
+
+        cursor.execute(f"DELETE FROM {db_manager.images_table_name} WHERE task_id = ?", (task_id,))
+        cursor.execute(f"DELETE FROM {db_manager.files_table_name} WHERE task_id = ?", (task_id,))
+        cursor.execute(f"DELETE FROM {db_manager.task_table_name} WHERE task_id = ?", (task_id,))
