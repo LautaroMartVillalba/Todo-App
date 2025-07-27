@@ -15,11 +15,16 @@ Attributes:
 """
 
 import sqlite3
+import os
 from contextlib import contextmanager
 from pathlib import Path
 
 BASE_DIR = Path().resolve().parent
-DB_PATH = BASE_DIR / 'database' / 'tasks_db.sqlite'
+DB_PATH = 'database/tasks_db.sqlite'
+
+if (not os.path.isfile(DB_PATH)):
+    print(DB_PATH)
+    print("no hay db???!?!?!?!?!?!") 
 
 task_table_name = 'task_table'
 images_table_name = 'images_table'

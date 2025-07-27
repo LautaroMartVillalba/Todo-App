@@ -1,12 +1,20 @@
 import "./App.css";
 
 function App() {
+  function callPython() {
+    (window as any).pywebview.api
+      .get_all_tasks()
+      .then((res, err) => {
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
   return (
-    <>
-      <div class="flex justify-center items-center h-[100vh] w-full">
-        <p class="text-2xl">Default app</p>
-      </div>
-    </>
+    <div className="text-2xl flex justify-center items-center h-[100vh]">
+      <button onClick={callPython}>click me</button>
+    </div>
   );
 }
 
