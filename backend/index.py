@@ -1,26 +1,18 @@
 import os
 import sys
-from time import time
 import webview
-from backend.managers import task_manager
+from managers import task_manager
 
 class Api:
     def fullscreen(self):
         webview.windows[0].toggle_fullscreen()
 
-    def save_content(self, content):
-        filename = webview.windows[0].create_file_dialog(webview.SAVE_DIALOG)
-        if not filename:
-            return
-
-        with open(filename, "w") as f:
-            f.write(content)
-
     def ls(self):
         return os.listdir("")
 
     # ///////////////////////////////////task_manager methods/////////////////////////////////////////////////
-    def create_task(self, title, description, init_date, termination_date, images_directories, files_directories):
+    def create_task(self, title: str, description: str, init_date: str, termination_date, images_directories, files_directories):
+
         try:
             method = task_manager.create_task(title, description, init_date, termination_date, images_directories, files_directories)
             return method
@@ -99,7 +91,7 @@ if __name__ == "__main__":
                                    entry,
                                    js_api=Api(),
                                    text_select=True)
-    webview.start()
+    webview.start(debug=True)
 
 
 

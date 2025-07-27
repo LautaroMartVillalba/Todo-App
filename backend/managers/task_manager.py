@@ -16,10 +16,10 @@ import logging
 import json
 
 from pathlib import Path
-from backend.managers import files_manager
-from backend.managers import images_manager
-from backend.models import task
-from backend.database import db_manager
+from managers import files_manager
+from managers import images_manager
+from models import task
+from database import db_manager
 
 BASE_DIR = Path().resolve().parent
 default_directory = BASE_DIR / 'database/tasks.json'
