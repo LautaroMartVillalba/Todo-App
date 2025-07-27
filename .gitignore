@@ -35,5 +35,5 @@ wheels/
 .venv
 
 # local db
-backend/database/*.sqlite
+backend/database/*.db
 backend/user_folder
