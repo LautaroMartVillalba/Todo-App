@@ -1,16 +1,19 @@
 {
-    "name": "task_runner",
-    "scripts": {
-        "setup": "cd frontend && pnpm i && cd ../backend && uv sync",
-        "dev:front": "pnpm --filter frontend dev",
-        "dev:back": "cd backend && wait-on http://localhost:5173 && DEV=1 uv run index.py",
-        "dev": "concurrently -k -n FRONTEND,BACKEND -c blue,green 'pnpm run dev:front' 'pnpm run dev:back'",
-        "app": "cd backend && uv run index.py",
-        "build:front": "pnpm --filter frontend build",
-        "build:linux": "pnpm run build:front && backend/.venv/bin/pyinstaller linux.spec --distpath dist/bin --clean --noconfirm"
-    },
-    "devDependencies": {
-        "concurrently": "^9.2.0",
-        "wait-on": "^8.0.3"
-    }
+  "name": "task_runner",
+  "scripts": {
+    "setup": "pnpm i && cd frontend && pnpm i && cd ../backend && uv sync",
+    "dev:front": "pnpm --filter frontend dev",
+    "dev:back": "cd backend && wait-on http://localhost:5173 && DEV=1 uv run index.py",
+    "dev": "concurrently -k -n FRONTEND,BACKEND -c blue,green 'pnpm run dev:front' 'pnpm run dev:back'",
+    "app": "cd backend && uv run index.py",
+    "build:front": "pnpm --filter frontend build",
+    "build:linux": "pnpm run build:front && backend/.venv/bin/pyinstaller linux.spec --distpath dist/bin --clean --noconfirm"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "wait-on": "^8.0.3"
+  },
+  "volta": {
+    "node": "22.16.0"
+  }
 }

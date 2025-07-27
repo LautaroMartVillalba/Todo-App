@@ -6,7 +6,7 @@ this project was made using:
 - vite js + reactjs
 
 #### Development
-it is recommended that you have both `uv` and `node` installed in your machine.
+it is recommended that you have both `uv` and `volta` installed in your machine so that the project can be run in the correct versions
 
 ```bash
 # In the root project
