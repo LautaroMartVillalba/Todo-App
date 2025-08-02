@@ -17,7 +17,7 @@ import uuid
 import os
 import shutil
 from pathlib import Path
-from database import db_manager
+from backend.database import db_manager
 
 user_images_directory = Path(Path().resolve().parent / 'user_folder' / 'images')
 

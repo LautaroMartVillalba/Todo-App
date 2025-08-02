@@ -15,16 +15,10 @@ Attributes:
 """
 
 import sqlite3
-import os
 from contextlib import contextmanager
 from pathlib import Path
 
-BASE_DIR = Path().resolve().parent
-DB_PATH = 'database/tasks_db.sqlite'
-
-if (not os.path.isfile(DB_PATH)):
-    print(DB_PATH)
-    print("no hay db???!?!?!?!?!?!") 
+DB_PATH = Path().resolve().parent / 'database' / 'tasks_db.sqlite'
 
 task_table_name = 'task_table'
 images_table_name = 'images_table'
@@ -82,7 +76,7 @@ def set_shared_connection(connection):
     shared_connection = connection
 
 @contextmanager
-def call_new_cursor():
+def call_new_cursor(path=DB_PATH):
     """
     A context manager that yields an SQLite cursor and connection, using either
     a previously set shared connection or creating a new one.
@@ -94,18 +88,17 @@ def call_new_cursor():
     Yields:
         Tuple[cursor, connection]: A tuple consisting of the SQLite cursor and the
                                    connection it belongs to.
+                                   :param path:
     """
     if shared_connection:
         cursor = shared_connection.cursor()
         yield cursor, shared_connection
         shared_connection.commit()
     else:
-        connection = sqlite3.connect(DB_PATH)
+        connection = sqlite3.connect(path)
         try:
             cursor = connection.cursor()
             yield cursor, connection
             connection.commit()
         finally:
             connection.close()
-
-init_db()
