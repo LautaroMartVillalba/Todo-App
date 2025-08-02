@@ -5,7 +5,7 @@ import uuid
 
 from backend.database import db_manager
 from backend.managers import task_manager
-from backend.tests.test_files_and_images.FilesEnum import file
+from backend.tests.test_files_and_images.FilesEnum import File
 from backend.models.task import Task
 
 class TaskTests(unittest.TestCase):
@@ -39,7 +39,7 @@ class TaskTests(unittest.TestCase):
                        "FOREIGN KEY (task_id) REFERENCES " + db_manager.task_table_name + "(task_id))")
 
     def test_if_create_task_method_save_correctly_data(self):
-        method = task_manager.create_task('Testing','testing desc','2025-01-01','2025-02-01',[file.HEIC_1311_A_JPG.value, file.SOMBRERO_GALAXY_JPG.value],file.DEEP_SPACE_CSV.value)
+        method = task_manager.create_task('Testing','testing desc','2025-01-01','2025-02-01', [File.HEIC_1311_A_JPG.value, File.SOMBRERO_GALAXY_JPG.value], File.DEEP_SPACE_CSV.value)
         with db_manager.call_new_cursor() as (cursor, connection):
             task_query = cursor.execute(f"SELECT * FROM {db_manager.task_table_name} WHERE title = 'Testing'").fetchone()
 
@@ -48,6 +48,12 @@ class TaskTests(unittest.TestCase):
             self.assertEqual(method['description'], task_query[2])
             self.assertEqual(method['init_date'], task_query[3])
             self.assertEqual(method['termination_date'], task_query[4])
+            image_rows = cursor.execute(f"SELECT COUNT(*) FROM {db_manager.images_table_name} WHERE task_id = ?",
+                                        (task_query[0],)).fetchone()[0]
+            file_rows = cursor.execute(f"SELECT COUNT(*) FROM {db_manager.files_table_name} WHERE task_id = ?",
+                                       (task_query[0],)).fetchone()[0]
+            self.assertGreaterEqual(image_rows, 1)
+            self.assertGreaterEqual(file_rows, 1)
 
     def test_if_create_task_method_only_accept_complete_data(self):
         with self.assertRaises(RuntimeError):
@@ -55,31 +61,31 @@ class TaskTests(unittest.TestCase):
                                      'testing desc',
                                      '2025-01-01',
                                      '2025-02-01',
-                                     [file.HEIC_1311_A_JPG.value, file.SOMBRERO_GALAXY_JPG.value],
-                                     file.DEEP_SPACE_CSV.value)
+                                     [File.HEIC_1311_A_JPG.value, File.SOMBRERO_GALAXY_JPG.value],
+                                     File.DEEP_SPACE_CSV.value)
         with self.assertRaises(RuntimeError):
             task_manager.create_task('Testing',
                                      '',
                                      '2025-01-01',
                                      '2025-02-01',
-                                     [file.HEIC_1311_A_JPG.value, file.SOMBRERO_GALAXY_JPG.value],
-                                     file.DEEP_SPACE_CSV.value)
+                                     [File.HEIC_1311_A_JPG.value, File.SOMBRERO_GALAXY_JPG.value],
+                                     File.DEEP_SPACE_CSV.value)
 
         with self.assertRaises(RuntimeError):
             task_manager.create_task('Testing',
                                     'testing desc',
                                     '',
                                     '2025-02-01',
-                                    [file.HEIC_1311_A_JPG.value, file.SOMBRERO_GALAXY_JPG.value],
-                                    file.DEEP_SPACE_CSV.value)
+                                     [File.HEIC_1311_A_JPG.value, File.SOMBRERO_GALAXY_JPG.value],
+                                     File.DEEP_SPACE_CSV.value)
 
         with self.assertRaises(RuntimeError):
             task_manager.create_task('Testing',
                                     'testing desc',
                                     '2025-01-01',
                                     '',
-                                    [file.HEIC_1311_A_JPG.value,file.SOMBRERO_GALAXY_JPG.value],
-                                    file.DEEP_SPACE_CSV.value)
+                                     [File.HEIC_1311_A_JPG.value, File.SOMBRERO_GALAXY_JPG.value],
+                                     File.DEEP_SPACE_CSV.value)
 
     def test_if_save_task_in_db_method_save_correctly_data(self):
 
@@ -149,14 +155,35 @@ class TaskTests(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertIsInstance(result, dict)
 
+    def test_get_all_tasks_without_related_files_or_images(self):
+        task_id = str(uuid.uuid4())
+        task_data = Task(
+            title='test',
+            description='No files/images',
+            init_date='2025-01-01',
+            termination_date='2025-01-02'
+        )
+        task_manager.save_task_in_db(task_id, task_data)
+
+        result = task_manager.get_all_tasks()
+
+        self.assertIn(task_id, result)
+        task_entry = result[task_id]
+        self.assertEqual(task_entry['title'], task_data.title)
+        self.assertEqual(task_entry['description'], task_data.description)
+        self.assertEqual(task_entry['init_date'], task_data.init_date)
+        self.assertEqual(task_entry['termination_date'], task_data.termination_date)
+        self.assertEqual(task_entry['images_directories'], {})
+        self.assertEqual(task_entry['files_directories'], {})
+
 
     def test_if_get_by_id_returns_correct_data(self):
         task = task_manager.create_task('Testing',
                                 'testing desc',
                                 '2025-01-01',
                                 '2025-01-02',
-                                [file.HEIC_1311_A_JPG.value,file.SOMBRERO_GALAXY_JPG.value],
-                                file.DEEP_SPACE_CSV.value)
+                                        [File.HEIC_1311_A_JPG.value, File.SOMBRERO_GALAXY_JPG.value],
+                                        File.DEEP_SPACE_CSV.value)
 
         result = task_manager.get_task_by_id(task.get("id"))
 
@@ -175,39 +202,79 @@ class TaskTests(unittest.TestCase):
         self.assertEqual(result.get("images_directories"), task.get("images_directories"))
         self.assertEqual(result.get("files_directories"), task.get("files_directories"))
 
-    def test_if_update_task_works_correctly_in_title(self):
-        task = task_manager.create_task('Testing',
-                                'testing desc',
-                                '2025-01-01',
-                                '2025-01-02',
-                                [file.HEIC_1311_A_JPG.value,file.SOMBRERO_GALAXY_JPG.value],
-                                file.DEEP_SPACE_CSV.value)
-        task_id = task.get("id")
+    def test_get_task_by_id_returns_empty_dict_if_not_found(self):
+        result = task_manager.get_task_by_id("non-existent-id")
 
-        new_title = "New Title"
-        new_desc = "New desc"
-        new_init_date = "2025-05-01"
-        new_termination_date = "2025-06-01"
-        new_images = [file.HEIC_1311_A_JPG.value]
-        new_files = [file.DEEP_SPACE_CSV.value, file.NGC_1514_PDF.value]
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result, {})
 
-        with_title = task_manager.update_task_info_by_id(task_id, title= new_title)
-        self.assertEqual(with_title.get("title"), new_title)
-        with_desc = task_manager.update_task_info_by_id(task_id, description= new_desc)
-        self.assertEqual(with_desc.get("description"), new_desc)
-        with_init = task_manager.update_task_info_by_id(task_id, init_date= new_init_date)
-        self.assertEqual(with_init.get("init_date"), new_init_date)
-        with_termination = task_manager.update_task_info_by_id(task_id, termination_date= new_termination_date)
-        self.assertEqual(with_termination.get("termination_date"), new_termination_date)
-        with_images = task_manager.update_task_info_by_id(task_id, new_image_directory= new_images)
-        retrieved = sorted([img_data["directory"] for img_data in with_images.get("images_directories").values()])
-        puto = sorted(new_images)
-        print(retrieved)
-        print(puto)
-        self.assertEqual(retrieved, puto)
-        # with_files = task_manager.update_task_info_by_id(task_id, new_file_directory=new_files)
-        # self.assertEqual(with_files.get("files_directories"), new_files)
+    def test_update_task_info_updates_task_data_only(self):
+        created = task_manager.create_task(
+            title="Original",
+            description="To update",
+            init_date="2025-01-01",
+            termination_date="2025-01-01",
+            images_directories=[File.SOMBRERO_GALAXY_JPG.value],
+            files_directories=File.STARS_CSV.value
+        )
+        task_id = created['id']
 
+        updated = task_manager.update_task_info_by_id(
+            task_id=task_id,
+            title="Updated Title",
+            description="Updated description",
+            init_date="2025-01-05",
+            termination_date="2025-01-15"
+        )
+
+        # Assert
+        self.assertEqual(updated['title'], "Updated Title")
+        self.assertEqual(updated['description'], "Updated description")
+        self.assertEqual(updated['init_date'], "2025-01-05")
+        self.assertEqual(updated['termination_date'], "2025-01-15")
+
+    def test_update_task_info_does_nothing_if_no_args_provided(self):
+        created = task_manager.create_task(
+            title="No change",
+            description="desc",
+            init_date="2025-01-01",
+            termination_date="2025-01-10",
+            images_directories=[File.HEIC_1311_A_JPG.value],
+            files_directories=File.STARS_CSV.value
+        )
+        task_id = created['id']
+
+        result = task_manager.update_task_info_by_id(task_id)
+
+        self.assertEqual(result['title'], "No change")
+        self.assertEqual(result['description'], "desc")
+        self.assertEqual(result['init_date'], "2025-01-01")
+        self.assertEqual(result['termination_date'], "2025-01-10")
+        images_ids = list(result['images_directories'])
+        self.assertEqual(result['images_directories'][images_ids[0]]['directory'], File.HEIC_1311_A_JPG.value.__str__())
+        files_ids = list(result['files_directories'])
+        self.assertEqual(result['files_directories'][files_ids[0]]['directory'], File.STARS_CSV.value.__str__())
+
+    def test_delete_task_images_and_files_by_task_id_removes_all_records(self):
+        created = task_manager.create_task(
+            title="Test task",
+            description="Test desc",
+            init_date="2025-01-01",
+            termination_date="2025-01-02",
+            images_directories=[File.SOMBRERO_GALAXY_JPG.value],
+            files_directories=File.STARS_CSV.value
+        )
+        task_id = created["id"]
+
+        all_tasks = task_manager.get_all_tasks()
+        self.assertIn(task_id, all_tasks)
+        self.assertTrue(len(all_tasks[task_id]["images_directories"]) > 0)
+        self.assertTrue(len(all_tasks[task_id]["files_directories"]) > 0)
+
+        task_manager.delete_task_images_and_files_by_task_id(task_id)
+
+        task = task_manager.get_task_by_id(task_id)
+        self.assertEqual(task, {})
 
     @classmethod
     def tearDown(cls):
