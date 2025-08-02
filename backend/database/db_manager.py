@@ -65,12 +65,9 @@ shared_connection = None
 
 def set_shared_connection(connection):
     """
-    Sets a global shared connection to be used by `call_new_cursor` for consistent
-    database access throughout the application.
-
-    Args:
-        connection (sqlite3.Connection): A SQLite connection object that will be
-                                         reused when accessing the database.
+    Set the global shared SQLite connection for use across the application.
+    
+    This connection will be reused by the `call_new_cursor` context manager to ensure consistent database access.
     """
     global shared_connection
     shared_connection = connection
@@ -78,17 +75,15 @@ def set_shared_connection(connection):
 @contextmanager
 def call_new_cursor(path=DB_PATH):
     """
-    A context manager that yields an SQLite cursor and connection, using either
-    a previously set shared connection or creating a new one.
-
-    Args:
-        data_base_dir (Path): The path to the database file. Although this argument
-                              is accepted, the function always uses the constant DB_PATH.
-
+    Context manager that yields an SQLite cursor and connection for database operations.
+    
+    If a shared connection is set, yields a cursor from it and commits changes after use. Otherwise, creates a new connection to the specified database path, yields a cursor and connection, commits changes, and closes the connection upon exit.
+    
+    Parameters:
+        path (Path or str, optional): Path to the SQLite database file. Defaults to DB_PATH.
+    
     Yields:
-        Tuple[cursor, connection]: A tuple consisting of the SQLite cursor and the
-                                   connection it belongs to.
-                                   :param path:
+        tuple: (cursor, connection) for executing database operations.
     """
     if shared_connection:
         cursor = shared_connection.cursor()
