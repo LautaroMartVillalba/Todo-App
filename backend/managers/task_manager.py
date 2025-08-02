@@ -5,24 +5,15 @@ This module provides functionality to manage tasks
 persistence to both an SQLiten database and a JSON file, retrieval, update, and deletion.
 It also handles associated image and file directories through delegation to external managers
 (images_manager and files_manager respectively).
-
-Attributes:
-    BASE_DIR (Path): Root directory of the project.
-    default_directory (Path): Full path to the default JSON file for storing task data.
 """
-import datetime
 import uuid
 import logging
-import json
 
-from pathlib import Path
-from managers import files_manager
-from managers import images_manager
-from models import task
-from database import db_manager
+from backend.managers import files_manager
+from backend.managers import images_manager
+from backend.models import task
+from backend.database import db_manager
 
-BASE_DIR = Path().resolve().parent
-default_directory = BASE_DIR / 'database/tasks.json'
 logger = logging.getLogger()
 
 def create_task(title, description, init_date, termination_date, images_directories, files_directories):
@@ -41,7 +32,7 @@ def create_task(title, description, init_date, termination_date, images_director
     Returns:
         dict: The complete task object with metadata and related files/images.
     """
-    # It does not check if images_directories and/or files_directories are empty String chain or None cause don't are
+    # It does not check if images_directories and/or files_directories are an empty String chain or None cause don't be
     # mandatory data
     if not title or not description or not init_date or not termination_date:
         raise RuntimeError('Title, description, init date and termination date are mandatory data')
