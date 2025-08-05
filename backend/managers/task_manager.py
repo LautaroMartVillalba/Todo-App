@@ -6,12 +6,14 @@ persistence to both an SQLiten database and a JSON file, retrieval, update, and 
 It also handles associated image and file directories through delegation to external managers
 (images_manager and files_manager respectively).
 """
+import json
 import uuid
 import logging
 
 from backend.managers import files_manager
 from backend.managers import images_manager
 from backend.models import task
+from backend.tests.test_files_and_images.FilesEnum import File
 from backend.database import db_manager
 
 logger = logging.getLogger()
