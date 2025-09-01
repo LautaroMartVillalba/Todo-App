@@ -20,19 +20,23 @@ logger = logging.getLogger()
 
 def create_task(title, description, init_date, termination_date, images_directories, files_directories):
     """
-    Creates a new task and persists it in both the SQLite database and the local JSON file.
-    Also stores the provided image and file directories associated with the task.
-
-    Args:
-        title (str): Title of the task.
-        description (str): Description of the task.
-        init_date (str): Task start date.
-        termination_date (str): Task end date.
-        images_directories (list[str]): List of image directory paths related to the task.
-        files_directories (list[str]): List of file directory paths related to the task.
-
+    Create a new task with the specified metadata and associate provided image and file directories.
+    
+    All task metadata is persisted in the database, and associated image and file directories are stored using external managers. If any error occurs during persistence, all related data is rolled back and a RuntimeError is raised.
+    
+    Parameters:
+        title (str): The task's title.
+        description (str): The task's description.
+        init_date (str): The task's start date.
+        termination_date (str): The task's end date.
+        images_directories (list[str]): Image directory paths to associate with the task.
+        files_directories (list[str]): File directory paths to associate with the task.
+    
     Returns:
-        dict: The complete task object with metadata and related files/images.
+        dict: The complete task data, including metadata and associated image and file directories.
+    
+    Raises:
+        RuntimeError: If required metadata is missing or if persistence fails.
     """
     # It does not check if images_directories and/or files_directories are an empty String chain or None cause don't be
     # mandatory data
